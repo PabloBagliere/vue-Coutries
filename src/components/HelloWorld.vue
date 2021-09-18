@@ -1,16 +1,12 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import Cart from "./Cart.vue";
 
-import { getCoutries, getCoutriesRegion } from "../api/countries";
+import { getCoutries, getCoutriesRegion, getCoutriesSearch } from "../api/countries";
 
 const state = ref([])
 const reg = ref("")
 const search = ref("")
-
-defineProps({
-  msg: String
-})
-
 
 const regions = ["Africa", "Americas", "Asia", "Europe", "Oceania"];
 
@@ -29,8 +25,20 @@ watch(reg, async () => {
   state.value = await getCoutriesRegion(reg.value)
 })
 
-watch(search, () => {
-  console.log(search.value)
+watch(search, async () => {
+  if (search.value.length === 0) {
+    const list = await getCoutries()
+    if(state.value.length != list.length) {
+      state.value = list;
+    }
+    return
+  }
+  if (Number(search.value)) return
+  getCoutriesSearch(search.value).then((list) => {
+    if(list?.status) return console.log("no encontrado")
+    state.value = list
+  })
+
 })
 
 </script>
@@ -52,24 +60,7 @@ watch(search, () => {
       </button>
     </div>
     <div class="grid">
-      <div v-for="(pais, index) in state" class="cart">
-        <img :key="index" :src="pais.flag" :alt="pais.name" />
-        <div :key="index" class="information">
-          <h2>{{ pais.name }}</h2>
-          <p>
-            <strong>Population:</strong>
-            {{ new Intl.NumberFormat().format(pais.population) }}
-          </p>
-          <p>
-            <strong>Region:</strong>
-            {{ pais.region }}
-          </p>
-          <p>
-            <strong>Capital:</strong>
-            {{ pais.capital }}
-          </p>
-        </div>
-      </div>
+      <Cart v-for="(pais, index) in state" :key="index" :pais="pais" />
     </div>
   </main>
 </template>
